@@ -1,0 +1,4 @@
+python-dotenv
+TwitterSearch
+boto3
+googletrans
