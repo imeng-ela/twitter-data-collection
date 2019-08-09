@@ -31,3 +31,8 @@ Bootstraping.
     BillGates,1155855503949553666
 ```
 Finally you'll need to setup a bucket to write the tweets to (S3_BUCKET_OUT).
+
+# data-prep
+Collection of tools for manipulating data for analysis.
+
+translate.py is an app to pull twitter data from s3, and translate any tweets that are not already in english and then put them back in s3 when done.
