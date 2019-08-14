@@ -5,18 +5,48 @@ from botocore.exceptions import ClientError
 import tarfile
 import shutil
 import json
+from google.cloud import translate
+
+def awsTranslator(srcLang, dataStr):
+   if srcLang == 'und':
+      print('Source Language undefined')
+      return dataStr
+   elif srcLang != 'en':
+      try:
+         result = awsTranslate.translate_text(Text=dataStr, SourceLanguageCode=srcLang, TargetLanguageCode="en")
+         translatedText = result.get('TranslatedText')
+         print(srcLang+': '+dataStr)
+         print('en: '+translatedText)
+         return translatedText
+      except ClientError as e:
+         print("Language " + srcLang + " is not supported by amazon translate")
+         return dataStr
+
+def googleTranslator(srcLang, dataStr):
+   # Instantiates a client
+   translate_client = translate.Client()
+
+   # Translates some text into English
+   translation = translate_client.translate(
+       dataStr,
+       target_language='en')
+   print(u'Text: {}'.format(dataStr))
+   print(u'Translation: {}'.format(translation['translatedText']))
+   return translation['translatedText']
+
 
 ## Bucket to use
 inBucketName = os.environ.get('S3_BUCKET_OUT')
 inDirName = os.environ.get('WORK_DIR_IN')
 outDirName = os.environ.get('WORK_DIR_OUT')
+translator = os.environ.get('TRANSLATOR')
 
 #Create working directories
 if not os.path.exists(outDirName):
    os.mkdir(outDirName)
 
 s3 = boto3.resource('s3')
-translate = boto3.client(service_name='translate', region_name='us-east-1', use_ssl=True)
+awsTranslate = boto3.client(service_name='translate', region_name='us-east-1', use_ssl=True)
 bucket = s3.Bucket(inBucketName)
 
 ## List objects within a given prefix
@@ -48,16 +78,14 @@ for obj in bucket.objects.filter(Prefix='twitterData'):
                # TODO: Hash tags, retweet status and others to translate
                dataStr = data['text']
                srcLang = data['lang']
-               if srcLang == 'und':
-                  print("Cannot translate tweet.  Language was not detected by twitter")
-               elif srcLang != 'en':
-                  try:
-                     result = translate.translate_text(Text=dataStr, SourceLanguageCode=srcLang, TargetLanguageCode="en")
-                     data['text'] = result.get('TranslatedText')
-                     print(srcLang+': '+dataStr)
-                     print('en: '+str(data['text']))
-                  except ClientError as e:
-                     print("Language " + srcLang + " is not supported by amazon translate")
+               if translator == 'aws':
+                  data['text'] = awsTranslator(srcLang, dataStr)
+               elif translator == 'google':
+                  data['text'] = googleTranslator(srcLang, dataStr)
+               else:
+                  print('No Translator specified.  Exiting!!!')
+                  exit()
+
                pathFileName = os.path.join(outDirName, filename)
                with open(pathFileName, 'w') as outFile:
                   json.dump(data, outFile, indent=4)
