@@ -2,3 +2,4 @@ python-dotenv
 TwitterSearch
 boto3
 googletrans
+google-cloud-translate
