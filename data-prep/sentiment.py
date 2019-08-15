@@ -21,14 +21,14 @@ bucket = s3.Bucket(inBucketName)
 comprehend = boto3.client(service_name='comprehend', region_name='us-east-1')
 
 #List objects within a given prefix
-for obj in bucket.objects.filter(Prefix='translated/twitterData'):
+for obj in bucket.objects.filter(Prefix='pre-sentiment/twitterData'):
    tgzFile = obj.key
    print(tgzFile)
 
    #Create working directories
-   if not os.path.exists(inDirName+'/translated'):
+   if not os.path.exists(inDirName+'/pre-sentiment'):
       os.mkdir(inDirName)
-      os.mkdir(inDirName+'/translated')
+      os.mkdir(inDirName+'/pre-sentiment')
 
    # Get the object
    fileName = inDirName+'/'+tgzFile
@@ -53,7 +53,8 @@ for obj in bucket.objects.filter(Prefix='translated/twitterData'):
 	
                pathFileName = os.path.join(outDirName, filename)
                with open(pathFileName, 'w') as outFile:
-                  outFile.write(sentiment) 
+                  json.dump(data, outFile, indent=4)
+                  outFile.write(sentiment)
             except json.decoder.JSONDecodeError as e:
                print(e)
             inFile.close()
@@ -61,15 +62,17 @@ for obj in bucket.objects.filter(Prefix='translated/twitterData'):
          continue
 
    # Retar data
-   with tarfile.open(tgzFile[11:], "w:gz") as tar:
+   with tarfile.open(tgzFile[14:], "w:gz") as tar:
       tar.add(outDirName, arcname=os.path.basename(outDirName))
 
    # Copy to "translated" folder
-   s3.meta.client.upload_file(tgzFile[11:], inBucketName, 'sentiment/'+tgzFile[11:])
+   s3.meta.client.upload_file(tgzFile[14:], inBucketName, 'sentiment/'+tgzFile[14:])
+   s3.Object(inBucketName, tgzFile).delete()
+
 
    # Cleanup
    try:
-      os.remove(tgzFile[11:])
+      os.remove(tgzFile[14:])
       shutil.rmtree(inDirName)
       shutil.rmtree(outDirName)
    except OSError as e:

@@ -101,6 +101,7 @@ for obj in bucket.objects.filter(Prefix='twitterData'):
 
    # Copy to "translated" folder
    s3.meta.client.upload_file(tgzFile, inBucketName, 'translated/'+tgzFile)
+   s3.meta.client.upload_file(tgzFile, inBucketName, 'pre-sentiment/'+tgzFile)
 
    # Move original to "raw" folder
    s3.meta.client.upload_file(inDirName+'/'+obj.key, inBucketName, 'raw/'+tgzFile)
